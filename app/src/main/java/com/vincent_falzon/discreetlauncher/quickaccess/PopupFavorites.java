@@ -63,7 +63,8 @@ public class PopupFavorites extends AppCompatActivity
 
 		// Display the list of favorites applications
 		RecyclerView recycler = findViewById(R.id.popup_recycler) ;
-		recycler.setAdapter(new RecyclerAdapter(this, ActivityMain.getApplicationsList().getFavorites(), Constants.FAVORITES_PANEL)) ;
+		//recycler.setAdapter(new RecyclerAdapter(this, ActivityMain.getApplicationsList().getFavorites(), Constants.FAVORITES_PANEL)) ;
+		recycler.setAdapter(new RecyclerAdapter(this, ActivityMain.getApplicationsList().getApplications(false), Constants.FAVORITES_PANEL)) ;
 		recycler.setLayoutManager(new FlexibleGridLayout(this, ActivityMain.getApplicationWidth())) ;
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
 			recycler.setOverScrollMode(View.OVER_SCROLL_NEVER) ;

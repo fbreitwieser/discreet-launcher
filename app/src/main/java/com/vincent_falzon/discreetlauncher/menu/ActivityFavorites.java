@@ -49,6 +49,7 @@ import com.vincent_falzon.discreetlauncher.storage.InternalFileTXT ;
 import java.text.Collator ;
 import java.util.ArrayList ;
 import java.util.Collections ;
+import java.util.List;
 
 /**
  * Allow to manage favorites.
@@ -56,7 +57,7 @@ import java.util.Collections ;
 public class ActivityFavorites extends AppCompatActivity implements View.OnClickListener
 {
 	// Attributes
-	private ArrayList<Application> favorites ;
+	private List<Application> favorites ;
 	private final RecyclerAdapter adapter = new RecyclerAdapter() ;
 	private ItemTouchHelper touchManager ;
 	private Drawable folder_icon ;

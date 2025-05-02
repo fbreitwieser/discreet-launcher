@@ -23,6 +23,7 @@ package com.vincent_falzon.discreetlauncher.core ;
  */
 
 // Imports
+import android.app.usage.UsageStats;
 import android.content.ComponentName ;
 import android.content.Context ;
 import android.content.Intent ;
@@ -32,6 +33,11 @@ import android.graphics.drawable.Drawable ;
 import android.net.Uri ;
 import android.os.UserHandle ;
 import android.view.View ;
+
+import com.vincent_falzon.discreetlauncher.ActivityMain;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represent an Android application (userHandle is used to identify work profile apps).
@@ -139,13 +145,13 @@ public class Application
 		{
 			// Check if the application is in a work profile
 			Context context = view.getContext() ;
-			if(userHandle != null)
-				{
-					// Try to launch the work profile application
-					LauncherApps launcherApps = (LauncherApps)context.getSystemService(Context.LAUNCHER_APPS_SERVICE) ;
-					launcherApps.startMainActivity(new ComponentName(apk, name), userHandle, null, null) ;
-					return true ;
-				}
+			if (userHandle != null) {
+				// Try to launch the work profile application
+				LauncherApps launcherApps = (LauncherApps)context.getSystemService(Context.LAUNCHER_APPS_SERVICE) ;
+				launcherApps.startMainActivity(new ComponentName(apk, name), userHandle, null, null) ;
+				ActivityMain.addToRecents(this);
+				return true ;
+			}
 
 			// Applications not in work profiles can be launched directly with Intents like below.
 			// This is preferred as it allows to resume the application to its previous state.
@@ -161,13 +167,14 @@ public class Application
 			activityIntent.addCategory(Intent.CATEGORY_LAUNCHER) ;
 			activityIntent.setClassName(apk, name) ;
 			activityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ;
-			if(activityIntent.resolveActivity(apkManager) != null) context.startActivity(activityIntent) ;
-				else
-				{
-					// If it was not found, launch the default intent of the package
-					packageIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ;
-					context.startActivity(packageIntent) ;
-				}
+			if (activityIntent.resolveActivity(apkManager) != null) {
+				context.startActivity(activityIntent) ;
+			} else {
+				// If it was not found, launch the default intent of the package
+				packageIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ;
+				context.startActivity(packageIntent) ;
+			}
+			ActivityMain.addToRecents(this);
 			return true ;
 		}
 		catch(Exception exception)

@@ -54,6 +54,7 @@ import com.vincent_falzon.discreetlauncher.menu.DialogHiddenApps ;
 import com.vincent_falzon.discreetlauncher.storage.InternalFile ;
 import com.vincent_falzon.discreetlauncher.storage.InternalFileTXT ;
 import java.util.ArrayList ;
+import java.util.List;
 
 /**
  * Fill a RecyclerView with a list of applications.
@@ -64,7 +65,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 	private static final String TAG = "RecyclerAdapter" ;
 
 	// Attributes
-	ArrayList<Application> applicationsList ;
+	List<Application> applicationsList ;
 	private final boolean hide_app_names ;
 	private final boolean hide_folder_names ;
 	private final boolean remove_padding ;
@@ -76,7 +77,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 	/**
 	 * Constructor to fill a RecyclerView with the applications list.
 	 */
-	public RecyclerAdapter(Context context, ArrayList<Application> applicationsList, int target)
+	public RecyclerAdapter(Context context, List<Application> applicationsList, int target)
 	{
 		// Initializations
 		this.applicationsList = applicationsList ;
@@ -250,11 +251,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 		{
 			// Start the application
 			Application application = applicationsList.get(getBindingAdapterPosition()) ;
-			if(!application.start(view))
-				{
-					final Context context = view.getContext() ;
-					Utils.displayLongToast(context, context.getString(R.string.error_app_not_found, application.getDisplayName())) ;
-				}
+			if (!application.start(view)) {
+				final Context context = view.getContext() ;
+				Utils.displayLongToast(context, context.getString(R.string.error_app_not_found, application.getDisplayName())) ;
+			}
 		}
 
 

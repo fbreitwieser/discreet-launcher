@@ -24,6 +24,7 @@ package com.vincent_falzon.discreetlauncher ;
 
 // Imports
 import android.annotation.SuppressLint ;
+import android.app.AppOpsManager;
 import android.app.role.RoleManager ;
 import android.content.Context ;
 import android.content.Intent ;
@@ -44,6 +45,8 @@ import androidx.core.view.GestureDetectorCompat ;
 import androidx.preference.PreferenceManager ;
 import androidx.recyclerview.widget.GridLayoutManager ;
 import androidx.recyclerview.widget.RecyclerView ;
+
+import android.provider.Settings;
 import android.view.GestureDetector ;
 import android.view.MotionEvent ;
 import android.view.View ;
@@ -90,6 +93,9 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 	private RecyclerView favorites ;
 	private RecyclerAdapter favoritesAdapter ;
 	private GridLayoutManager favoritesLayout ;
+
+	private RecyclerAdapter recentAdapter ;
+	private GridLayoutManager recentLayout ;
 	private ImageView menuButton ;
 	private TextView noFavoritesYet ;
 	private TextView targetFavorites ;
@@ -188,7 +194,8 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 		maybeHideSystemBars(false) ;
 
 		// Initialize the content of the favorites panel
-		favoritesAdapter = new RecyclerAdapter(this, applicationsList.getFavorites(), Constants.FAVORITES_PANEL) ;
+		//favoritesAdapter = new RecyclerAdapter(this, applicationsList.getFavorites(), Constants.FAVORITES_PANEL) ;
+		favoritesAdapter = new RecyclerAdapter(this, applicationsList.getRecentApplications(getApplicationContext()), Constants.FAVORITES_PANEL) ;
 		favoritesAdapter.setTextColor(Utils.getColor(settings, Constants.TEXT_COLOR_FAVORITES, Constants.COLOR_FOR_TEXT_ON_OVERLAY)) ;
 		favorites.setAdapter(favoritesAdapter) ;
 		favoritesLayout = new FlexibleGridLayout(this, application_width) ;
@@ -380,8 +387,9 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 				defaultLauncherButton.setVisibility(show_default_launcher_button ? View.VISIBLE : View.GONE) ;
 
 				// Display a message if the user does not have any favorites applications yet
-				if(applicationsList.getFavorites().size() == 0) noFavoritesYet.setVisibility(View.VISIBLE) ;
-					else noFavoritesYet.setVisibility(View.GONE) ;
+				//if(applicationsList.getFavorites().size() == 0) noFavoritesYet.setVisibility(View.VISIBLE) ;
+				//	else
+						noFavoritesYet.setVisibility(View.GONE) ;
 
 				// Retrieve the background color
 				int background_color = Utils.getColor(settings, Constants.BACKGROUND_COLOR_FAVORITES, Constants.COLOR_FOR_OVERLAY) ;
@@ -570,6 +578,15 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 			Utils.displayToast(context, R.string.info_favorites_refreshed) ;
 	}
 
+	/**
+	 * Update the recent applications
+	 */
+	public static void addToRecents(Application app)
+	{
+		applicationsList.addToRecents(app);
+		adapters_update_needed = true ;
+	}
+
 
 	/**
 	 * Update the applications list and inform the user.
@@ -627,6 +644,32 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 		return super.onTouchEvent(event) ;
 	}
 
+	private void requestUsageStatsPermission() {
+		// Check if the necessary setting exists on the device
+		Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+		if (intent.resolveActivity(getPackageManager()) != null) {
+			startActivity(intent);
+			// Optionally, show a dialog explaining why the permission is needed first
+		} else {
+			// Handle case where the setting activity is not available (should be rare on API 21+)
+			// Maybe show an error message.
+		}
+	}
+
+	private boolean hasUsageStatsPermission(Context context) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+			return true; // UsageStatsManager not available before Lollipop
+		}
+		AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+		if (appOps == null) {
+			return false;
+		}
+		// AppOpsManager.OPSTR_GET_USAGE_STATS is the String constant for the operation
+		int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+				android.os.Process.myUid(), context.getPackageName());
+
+		return mode == AppOpsManager.MODE_ALLOWED;
+	}
 
 	/**
 	 * Called when displaying the home screen, including on app creation.
@@ -636,6 +679,12 @@ public class ActivityMain extends AppCompatActivity implements View.OnClickListe
 	{
 		// Let the parent actions be performed
 		super.onResume() ;
+		if (!hasUsageStatsPermission(this)) {
+			// Permission not granted, prompt the user
+			// Consider showing a dialog explaining why you need the permission
+			// before redirecting them.
+			requestUsageStatsPermission();
+		}
 
 		// Hide the favorites panel and the applications drawer
 		keepMenuAccessible() ;

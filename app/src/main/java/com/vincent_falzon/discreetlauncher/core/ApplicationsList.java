@@ -23,7 +23,10 @@ package com.vincent_falzon.discreetlauncher.core ;
  */
 
 // Imports
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context ;
+import android.content.Intent;
 import android.content.SharedPreferences ;
 import android.content.pm.LauncherActivityInfo ;
 import android.content.pm.LauncherApps ;
@@ -37,8 +40,12 @@ import android.graphics.Paint ;
 import android.graphics.PorterDuff ;
 import android.graphics.drawable.BitmapDrawable ;
 import android.graphics.drawable.Drawable ;
+import android.icu.util.Calendar;
+import android.os.Build;
 import android.os.UserHandle ;
 import android.os.UserManager ;
+
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.content.res.AppCompatResources ;
 import androidx.core.content.ContextCompat ;
 import androidx.preference.PreferenceManager ;
@@ -48,9 +55,18 @@ import com.vincent_falzon.discreetlauncher.Utils ;
 import com.vincent_falzon.discreetlauncher.settings.ColorPickerDialog ;
 import com.vincent_falzon.discreetlauncher.storage.* ;
 import java.text.Collator ;
+import java.util.ArrayDeque;
 import java.util.ArrayList ;
 import java.util.Collections ;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List ;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Provide and manage lists of applications.
@@ -61,9 +77,14 @@ public class ApplicationsList
 	private static final String TAG = "ApplicationsList" ;
 
 	// Attributes
-	private final ArrayList<Application> drawer ;
-	private final ArrayList<Application> hidden ;
-	private final ArrayList<Application> favorites ;
+	private final List<Application> drawer ;
+
+	private final Map<String, Application> apkToApplication;
+	private final List<Application> hidden ;
+	private final List<Application> favorites ;
+
+	private final LinkedList<Application> recentApps ;
+
 	private final Paint grayscalePaint ;
 	private int icon_size ;
 
@@ -73,10 +94,12 @@ public class ApplicationsList
 	 */
 	public ApplicationsList()
 	{
-		// Create the lists of applications
+        // Create the lists of applications
 		drawer = new ArrayList<>() ;
+		apkToApplication = new HashMap<>();
 		hidden = new ArrayList<>() ;
 		favorites = new ArrayList<>() ;
+		recentApps = new LinkedList<>();
 
 		// Initialize the grayscale Paint used by the icon color filter
 		ColorMatrix colorMatrix = new ColorMatrix() ;
@@ -97,6 +120,7 @@ public class ApplicationsList
 		IconPack iconPack1 = new IconPack(context, Constants.ICON_PACK) ;
 		IconPack iconPack2 = new IconPack(context, Constants.ICON_PACK_SECONDARY) ;
 		drawer.clear() ;
+		apkToApplication.clear();
 
 		// Retrieve the icon size in pixels
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context) ;
@@ -156,6 +180,10 @@ public class ApplicationsList
 			}
 		}
 
+		for (Application application : getApplications(true)) {
+			apkToApplication.put(application.apk, application);
+		}
+
 		// Add the shortcuts to the list as applications
 		loadShortcuts(context) ;
 
@@ -185,6 +213,8 @@ public class ApplicationsList
 
 		// Update the favorites applications list
 		updateFavorites() ;
+
+		updateRecentApps(context);
 	}
 
 
@@ -535,7 +565,7 @@ public class ApplicationsList
 	/**
 	 * Return the list of what should appear in the app drawer.
 	 */
-	public ArrayList<Application> getDrawer()
+	public List<Application> getDrawer()
 	{
 		return drawer ;
 	}
@@ -544,16 +574,93 @@ public class ApplicationsList
 	/**
 	 * Return the list of favorite application for display in the panel.
 	 */
-	public ArrayList<Application> getFavorites()
+	public List<Application> getFavorites()
 	{
 		return favorites ;
+	}
+
+	private void updateRecentApps(Context context) {
+		recentApps.clear();
+
+		recentApps.addAll(getRecentAppsBasedOnUsage(context));
+	}
+
+
+	public void addToRecents(Application app) {
+		if (!recentApps.remove(app)) {
+			recentApps.removeLast();
+		}
+		recentApps.addFirst(app);
+
+	}
+
+	@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+	private List<Application> getRecentAppsBasedOnUsage(Context context) {
+		List<Application> apps = new ArrayList();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			Intent intent = new Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS);
+			//startActivity(intent);
+
+			//UsageStatsManager usageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+			UsageStatsManager usageStatsManager = (UsageStatsManager) context.getSystemService(Context.USAGE_STATS_SERVICE);
+			if (usageStatsManager == null) return new ArrayList<>();
+
+			long currentTime = System.currentTimeMillis();
+			// Define the time interval (e.g., last 24 hours)
+			Calendar calendar = null;
+			calendar = Calendar.getInstance();
+
+			calendar.add(Calendar.DAY_OF_YEAR, -1); // Go back 1 day
+			long startTime = calendar.getTimeInMillis();
+
+			// Query usage stats for the defined interval
+			List<UsageStats> usageStatsList = usageStatsManager.queryUsageStats(
+					UsageStatsManager.INTERVAL_DAILY, // Aggregation interval (can be DAILY, WEEKLY, MONTHLY, YEARLY, BEST)
+					startTime,
+					currentTime);
+
+			if (usageStatsList != null && !usageStatsList.isEmpty()) {
+				// Sort the list by last time used (descending)
+				// Using Java 8+ Streams:
+				List<UsageStats> sortedList = usageStatsList.stream()
+						.filter(stats -> stats.getLastTimeUsed() > 0) // Filter out apps never used in the interval
+						.sorted(Comparator.comparingLong(UsageStats::getLastTimeUsed).reversed())
+						.collect(Collectors.toList());
+
+				Set<String> seen = new HashSet<>();
+				for (UsageStats stats : sortedList) {
+					boolean isNewApp = seen.add(stats.getPackageName());
+					boolean isInList = apkToApplication.containsKey(stats.getPackageName());
+					boolean isLauncher = stats.getPackageName().equals(context.getPackageName());
+
+					if (isNewApp && isInList && !isLauncher) {
+						apps.add(apkToApplication.get(stats.getPackageName()));
+					}
+					if (apps.size() >= 10) {
+						break;
+					}
+				}
+			}
+		}
+		return apps;
+	}
+
+
+
+	/**
+	 * Return the list of recent application for display in the panel.
+	 */
+	public List<Application> getRecentApplications(Context context)
+	{
+		updateRecentApps(context);
+		return recentApps;
 	}
 
 
 	/**
 	 * Return the list of hidden applications for display in the settings.
 	 */
-	public ArrayList<Application> getHidden()
+	public List<Application> getHidden()
 	{
 		return hidden ;
 	}
