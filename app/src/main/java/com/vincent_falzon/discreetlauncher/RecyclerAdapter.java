@@ -284,7 +284,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 
 			// Prepare and display the selection dialog
 			AlertDialog.Builder dialog = new AlertDialog.Builder(context) ;
-			dialog.setTitle(context.getString(R.string.long_click_dialog_title)) ;
+			//dialog.setTitle(context.getString(R.string.long_click_dialog_title)) ;
+			dialog.setTitle(application.getApk()) ;
 			if(application instanceof Shortcut)
 				{
 					CharSequence[] options = {
@@ -373,7 +374,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 				else
 				{
 					CharSequence[] options = {
-							context.getString(R.string.long_click_open, application.getDisplayName()),
 							context.getString(R.string.long_click_settings),
 							context.getString(R.string.long_click_view_store),
 							context.getString(R.string.long_click_rename),
@@ -385,15 +385,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 							switch(selection)
 							{
 								case 0 :
-									// Start the application and display an error message if it was not found
-									if(!application.start(view))
-										Utils.displayLongToast(context, context.getString(R.string.error_app_not_found, application.getDisplayName())) ;
-									break ;
-								case 1 :
 									// Open the application system settings
 									application.showSettings(context) ;
 									break ;
-								case 2 :
+								case 1 :
 									// Open the application page in the store
 									Intent storeIntent = new Intent(Intent.ACTION_VIEW) ;
 									storeIntent.setData(Uri.parse("market://details?id=" + application.getApk())) ;
@@ -408,22 +403,24 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 										Utils.displayLongToast(context, context.getString(R.string.error_app_not_found, "{market}")) ;
 									}
 									break ;
-								case 3 :
+								case 2 :
 									// Display the dialog to rename the application
 									showRenameDialog(context, application) ;
 									break ;
-								case 4 :
+								case 3 :
 									// Toggle the presence of the application in the favorites panel
 									toggleFavorite(context, application, is_favorite) ;
 									break ;
-								case 5 :
+								case 4 :
 									// Toggle the presence of the shortcut in a folder
 									toggleFolder(context, application, is_in_folder) ;
 									break ;
 							}
 						}) ;
 				}
-			dialog.show() ;
+				AlertDialog d = dialog.create();
+				//d.getWindow().setBackgroundDrawableResource(R.drawable.shape_rounded_corners);
+			d.show() ;
 
 			// Consider the event as consumed
 			return true ;

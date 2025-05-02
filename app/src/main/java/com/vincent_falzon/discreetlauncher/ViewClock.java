@@ -140,7 +140,7 @@ public class ViewClock extends View implements View.OnTouchListener
 		super.onDraw(canvas) ;
 
 		// Do not continue if the clock is not enabled
-		String clock_format = settings.getString(Constants.CLOCK_FORMAT, Constants.NONE) ;
+		String clock_format = settings.getString(Constants.CLOCK_FORMAT, "datetime") ;
 		clock_disabled = clock_format.equals(Constants.NONE) ;
 		if(clock_disabled) return ;
 
@@ -156,7 +156,7 @@ public class ViewClock extends View implements View.OnTouchListener
 		// Retrieve the clock colors, position and size
 		int clock_color = Utils.getColor(settings, Constants.CLOCK_COLOR, Constants.COLOR_FOR_TEXT_ON_OVERLAY) ;
 		int shadow_color = Utils.getColor(settings, Constants.CLOCK_SHADOW_COLOR, Constants.COLOR_FOR_OVERLAY) ;
-		String clock_position = settings.getString(Constants.CLOCK_POSITION, "middle") ;
+		String clock_position = settings.getString(Constants.CLOCK_POSITION, "top") ;
 		String clock_size = settings.getString(Constants.CLOCK_SIZE, "medium") ;
 
 		// Retrieve the current date and time
@@ -234,6 +234,7 @@ public class ViewClock extends View implements View.OnTouchListener
 				String date_text ;
 				if(clock_format.endsWith("short")) date_text = SimpleDateFormat.getDateInstance(DateFormat.DEFAULT).format(current_time.getTime()) ;
 					else date_text = SimpleDateFormat.getDateInstance(DateFormat.FULL).format(current_time.getTime()) ;
+
 				String time_text = SimpleDateFormat.getTimeInstance(DateFormat.SHORT).format(current_time.getTime()) ;
 
 				// Compute the time text dimensions
