@@ -148,7 +148,7 @@ public class ShortcutListener extends AppCompatActivity
 	/**
 	 * Remove an entry from the shortcuts file.
 	 */
-	public static void removeShortcut(Context context, String display_name, String shortcut_apk)
+	public static void removeShortcut(Context context, String name, String shortcut_apk, String component_info)
 	{
 		// Save the current shortcuts list and remove the file
 		InternalFileTXT file = new InternalFileTXT(shortcut_apk.equals(Constants.APK_SHORTCUT_LEGACY) ? Constants.FILE_SHORTCUTS_LEGACY : Constants.FILE_SHORTCUTS) ;
@@ -160,24 +160,25 @@ public class ShortcutListener extends AppCompatActivity
 			}
 
 		// Write the new shortcuts list in the file
-		String[] shortcut ;
 		for(String shortcut_line : currentShortcuts)
 		{
-			// Extract the display name from the line and check if this is the shortcut to remove
-			shortcut = shortcut_line.split(Constants.SHORTCUT_SEPARATOR) ;
-			if(shortcut[0].equals(display_name))
+			// Check if the line contains the internal name of the shortcut to remove
+			if(shortcut_line.contains(name))
 				{
+					// Retrieve the original shortcut display name to remove the shortcut icon
+					String[] shortcut = shortcut_line.split(Constants.SHORTCUT_SEPARATOR) ;
+					InternalFilePNG icon = new InternalFilePNG(Constants.FILE_ICON_SHORTCUT_PREFIX + shortcut[0] + ".png") ;
+					icon.remove() ;
+
 					// Remove the shortcut from the favorites if it was there
-					new InternalFileTXT(Constants.FILE_FAVORITES).removeLine(shortcut[1]) ;
+					new InternalFileTXT(Constants.FILE_FAVORITES).removeLine(component_info) ;
+
+					// Skip adding back the shortcut to the file
 					continue ;
 				}
 
 			// Add all the other shortcuts to the list again
 			file.writeLine(shortcut_line) ;
 		}
-
-		// Remove the shortcut icon
-		InternalFilePNG icon = new InternalFilePNG(Constants.FILE_ICON_SHORTCUT_PREFIX + display_name + ".png") ;
-		icon.remove() ;
 	}
 }

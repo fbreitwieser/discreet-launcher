@@ -290,6 +290,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 					CharSequence[] options = {
 							context.getString(R.string.long_click_open, application.getDisplayName()),
 							context.getString(R.string.long_click_remove_shortcut),
+							context.getString(R.string.long_click_rename),
 							context.getString(is_favorite ? R.string.long_click_remove_favorites : R.string.long_click_add_favorites),
 							(is_in_folder != null) ? context.getString(R.string.long_click_remove_folder, is_in_folder) : context.getString(R.string.long_click_add_folder),
 						} ;
@@ -303,15 +304,19 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.Applic
 									break ;
 								case 1 :
 									// Remove the shortcut from the file and update the applications list
-									ShortcutListener.removeShortcut(context, application.getDisplayName(), application.getApk()) ;
+									ShortcutListener.removeShortcut(context, application.getName(), application.getApk(), application.getComponentInfo()) ;
 									ActivityMain.updateList(context) ;
 									notifyDataSetChanged() ;
 									break ;
 								case 2 :
+									// Display the dialog to rename the shortcut
+									showRenameDialog(context, application) ;
+									break ;
+								case 3 :
 									// Toggle the presence of the shortcut in the favorites panel
 									toggleFavorite(context, application, is_favorite) ;
 									break ;
-								case 3 :
+								case 4 :
 									// Toggle the presence of the shortcut in a folder
 									toggleFolder(context, application, is_in_folder) ;
 									break ;

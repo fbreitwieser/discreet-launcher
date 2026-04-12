@@ -380,7 +380,7 @@ public class ApplicationsList
 				String[] shortcut ;
 				for(String shortcut_line : file.readAllLines())
 				{
-					// Extrat the shortcut details
+					// Extract the shortcut details
 					shortcut = shortcut_line.split(Constants.SHORTCUT_SEPARATOR) ;
 					if(shortcut.length != 4) continue ;
 
@@ -404,7 +404,7 @@ public class ApplicationsList
 				String[] legacy_shortcut ;
 				for(String legacy_shortcut_line : legacyFile.readAllLines())
 				{
-					// Extrat the shortcut details
+					// Extract the shortcut details
 					legacy_shortcut = legacy_shortcut_line.split(Constants.SHORTCUT_SEPARATOR) ;
 					if(legacy_shortcut.length != 2) continue ;
 
